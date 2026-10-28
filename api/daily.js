@@ -32,24 +32,31 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Search instructions must be 500 characters or fewer.' });
   }
 
-  // Check for API key
-  if (!process.env.GEMINI_API_KEY) {
-    return res.status(503).json({ error: 'GEMINI_API_KEY environment variable is not set' });
+  const credentials = [
+    { apiKey: process.env.GEMINI_API_KEY },
+    { apiKey: process.env.GEMINI_API_KEY_2 },
+    { apiKey: process.env.GEMINI_API_KEY_3 },
+  ].filter(credential => credential.apiKey);
+
+  if (credentials.length === 0) {
+    return res.status(503).json({
+      error: 'Configure at least one key: GEMINI_API_KEY, GEMINI_API_KEY_2, or GEMINI_API_KEY_3.',
+    });
   }
 
   try {
-    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    
-    // Try models in priority order with fallback
     let briefing = null;
     let lastError = null;
     let usedModel = null;
+    let quotaExceeded = false;
 
-    for (const modelName of MODEL_PRIORITY) {
-      try {
-        console.log(`Attempting model: ${modelName}`);
+    for (const [credentialIndex, credential] of credentials.entries()) {
+      const genAI = new GoogleGenAI({ apiKey: credential.apiKey });
 
-        // Construct personalized daily briefing prompt
+      for (const modelName of MODEL_PRIORITY) {
+        try {
+          console.log(`Attempting credential ${credentialIndex + 1}, model: ${modelName}`);
+
         const prompt = `You are a daily intelligence-link curator, not a chatbot. Find and summarize useful, current sources as clickable links.
 
 ${topic === 'all topics'
@@ -100,42 +107,52 @@ IMPORTANT:
 - Prefer current sources for news and timeless sources for foundational knowledge
 - Match the number of sections to the instructions above`;
 
-        const result = await genAI.interactions.create({
-          model: modelName,
-          input: prompt,
-          tools: [{ type: 'google_search' }],
-        });
-        const responseText = result.output_text;
-        if (!responseText) {
-          throw new Error(`Model ${modelName} returned an empty response`);
-        }
-        usedModel = modelName;
-        console.log(`Successfully generated briefing using model: ${modelName}`);
-        
-        // Extract JSON from response
-        let jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
+          const result = await genAI.interactions.create({
+            model: modelName,
+            input: prompt,
+            tools: [{ type: 'google_search' }],
+          });
+          const responseText = result.output_text;
+          if (!responseText) {
+            throw new Error(`Model ${modelName} returned an empty response`);
+          }
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) {
+            throw new Error(`Model ${modelName} returned no JSON`);
+          }
           try {
             briefing = JSON.parse(jsonMatch[0]);
-          } catch (parseError) {
-            console.error('JSON parse error:', parseError);
-            lastError = new Error(`Model ${modelName} returned invalid JSON`);
-            briefing = null;
+          } catch {
+            throw new Error(`Model ${modelName} returned invalid JSON`);
           }
-        } else {
-          lastError = new Error(`Model ${modelName} returned no JSON`);
+          if (!briefing || !Array.isArray(briefing.sections)) {
+            throw new Error(`Model ${modelName} returned an invalid briefing structure`);
+          }
+          usedModel = modelName;
+          console.log(`Successfully generated briefing using credential ${credentialIndex + 1}, model: ${modelName}`);
+          break;
+        } catch (modelError) {
+          console.error(`Credential ${credentialIndex + 1}, model ${modelName} failed:`, modelError.message);
+          lastError = modelError;
+          if (isQuotaError(modelError)) {
+            quotaExceeded = true;
+            break;
+          }
+          if (isCredentialError(modelError)) {
+            break;
+          }
         }
-        
-        if (briefing) break; // Success, exit the loop
-      } catch (modelError) {
-        console.error(`Model ${modelName} failed:`, modelError.message);
-        lastError = modelError;
-        continue; // Try next model
       }
+
+      if (briefing) break;
     }
 
-    // If all models failed
     if (!briefing) {
+      if (quotaExceeded) {
+        return res.status(429).json({
+          error: 'Gemini quota was exceeded and no configured key succeeded. Check project usage and billing at https://aistudio.google.com/rate-limit. Daily request limits reset at midnight Pacific. Each backup key needs to belong to a different Google Cloud project to provide a separate project quota.',
+        });
+      }
       throw new Error(`All models failed. Last error: ${lastError?.message || 'Unknown error'}`);
     }
 
@@ -149,4 +166,15 @@ IMPORTANT:
     console.error('Error in daily briefing:', error);
     return res.status(500).json({ error: error.message });
   }
+}
+
+function isQuotaError(error) {
+  const status = Number(error && typeof error === 'object' ? error.status : undefined);
+  const message = error instanceof Error ? error.message : String(error);
+  return status === 429 || /\b429\b|quota|rate.?limit/i.test(message);
+}
+
+function isCredentialError(error) {
+  const status = Number(error && typeof error === 'object' ? error.status : undefined);
+  return status === 401 || status === 403;
 }
