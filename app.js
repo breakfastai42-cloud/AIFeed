@@ -1,48 +1,23 @@
-// Ethiopian Calendar Converter
-const ETHIOPIAN_MONTHS = [
-  'Meskerem', 'Tikimt', 'Hidar', 'Tahsas', 'Tir', 'Yekatit',
-  'Megabit', 'Miazia', 'Genbot', 'Sene', 'Hamle', 'Nehase', 'Pagume'
-];
-
-const ETHIOPIAN_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-function toEthiopianDate(date) {
-  const ethiopianYear = date.getFullYear() - 8;
-  let ethiopianMonth, ethiopianDay;
-  
-  const month = date.getMonth();
-  const day = date.getDate();
-  
-  if (month >= 8) {
-    ethiopianMonth = month - 8;
-    ethiopianDay = day;
-  } else {
-    ethiopianMonth = month + 4;
-    ethiopianDay = day;
-  }
-  
-  const dayOfWeek = ETHIOPIAN_DAYS[date.getDay()];
-  const monthName = ETHIOPIAN_MONTHS[ethiopianMonth];
-  
-  return `${dayOfWeek}, ${monthName} ${ethiopianDay}, ${ethiopianYear}`;
+// Gregorian Calendar
+function toGregorianDate(date) {
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  return date.toLocaleDateString('en-US', options);
 }
 
 // UI Elements
-const ethiopianDateEl = document.getElementById('ethiopianDate');
-const chatContainer = document.getElementById('chatContainer');
-const chatForm = document.getElementById('chatForm');
-const messageInput = document.getElementById('messageInput');
-const sendBtn = document.getElementById('sendBtn');
-const clearChatBtn = document.getElementById('clearChatBtn');
+const dateEl = document.getElementById('date');
+const linksContainer = document.getElementById('linksContainer');
+const getMoreBtn = document.getElementById('getMoreBtn');
+const customSearchBtn = document.getElementById('customSearchBtn');
+const customSearchModal = document.getElementById('customSearchModal');
+const customSearchInput = document.getElementById('customSearchInput');
+const runCustomSearchBtn = document.getElementById('runCustomSearchBtn');
+const closeCustomSearchBtn = document.getElementById('closeCustomSearchBtn');
 const toastEl = document.getElementById('toast');
-
-// State
-let conversationHistory = [];
-let hasWelcome = true;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  ethiopianDateEl.textContent = toEthiopianDate(new Date());
+  dateEl.textContent = toGregorianDate(new Date());
   
   // Load daily briefing on startup
   loadDailyBriefing();
@@ -58,27 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // Load Daily Briefing
 async function loadDailyBriefing() {
   try {
-    // Remove welcome message
-    const welcome = chatContainer.querySelector('.welcome-message');
-    if (welcome) {
-      welcome.remove();
-      hasWelcome = false;
-    }
-
-    // Add loading indicator
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'message ai';
-    loadingDiv.innerHTML = `
-      <div class="message-content">
-        <div class="typing-indicator">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+    linksContainer.innerHTML = `
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Fetching daily intelligence links...</p>
       </div>
     `;
-    chatContainer.appendChild(loadingDiv);
-    scrollToBottom();
 
     const response = await fetch('/api/daily', {
       method: 'POST',
@@ -87,8 +47,6 @@ async function loadDailyBriefing() {
       },
     });
 
-    loadingDiv.remove();
-
     if (!response.ok) {
       throw new Error('Failed to load daily briefing');
     }
@@ -96,222 +54,171 @@ async function loadDailyBriefing() {
     const data = await response.json();
 
     if (data.success && data.briefing) {
-      displayDailyBriefing(data.briefing);
-      conversationHistory.push({
-        role: 'assistant',
-        content: JSON.stringify(data.briefing)
-      });
+      displayBriefing(data.briefing);
     } else {
       throw new Error(data.error || 'Unknown error');
     }
   } catch (error) {
     console.error('Error loading briefing:', error);
-    addMessage('ai', `⚠️ Failed to load daily briefing: ${error.message}. Please try again.`);
+    linksContainer.innerHTML = `
+      <div class="error-state">
+        <p>⚠️ Failed to load: ${error.message}</p>
+        <button class="retry-btn" onclick="loadDailyBriefing()">Retry</button>
+      </div>
+    `;
   }
 }
 
-// Display Daily Briefing
-function displayDailyBriefing(briefing) {
+// Display Briefing
+function displayBriefing(briefing) {
   if (!briefing.sections || !Array.isArray(briefing.sections)) {
-    addMessage('ai', 'No briefing data available.');
+    linksContainer.innerHTML = '<p>No briefing data available.</p>';
     return;
   }
 
+  let html = '';
+  
   briefing.sections.forEach(section => {
-    const sectionHtml = `
-      <div class="briefing-section">
+    html += `
+      <div class="section">
         <h3>${section.emoji} ${section.title}</h3>
-        <p>${section.content}</p>
-        <div class="links-list">
+        <p class="section-description">${section.content}</p>
+        <div class="links-grid">
           ${section.links.map(link => `
-            <div class="link-item">
-              <a href="${link.url}" target="_blank" rel="noopener noreferrer">
-                ${link.title}
-              </a>
-              <p class="link-description">${link.description}</p>
-            </div>
+            <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="link-card">
+              <div class="link-title">${link.title}</div>
+              <div class="link-description">${link.description}</div>
+              <div class="link-url">${new URL(link.url).hostname}</div>
+            </a>
           `).join('')}
         </div>
       </div>
     `;
-
-    addMessage('ai', sectionHtml, true);
   });
 
-  // Add "New Briefing" button
-  const buttonHtml = `
-    <button class="new-briefing-btn" onclick="loadDailyBriefing()">
-      🔄 Get New Briefing
-    </button>
-  `;
-  addMessage('ai', buttonHtml, true);
+  linksContainer.innerHTML = html;
 }
 
-// Add Message to Chat
-function addMessage(role, content, isHtml = false) {
-  const messageDiv = document.createElement('div');
-  messageDiv.className = `message ${role}`;
-  
-  const contentDiv = document.createElement('div');
-  contentDiv.className = 'message-content';
-  
-  if (isHtml) {
-    contentDiv.innerHTML = content;
-  } else {
-    contentDiv.textContent = content;
+// Get More Links
+getMoreBtn.addEventListener('click', () => {
+  loadDailyBriefing();
+});
+
+// Custom Search Modal
+customSearchBtn.addEventListener('click', () => {
+  customSearchModal.classList.add('show');
+  customSearchInput.focus();
+});
+
+closeCustomSearchBtn.addEventListener('click', () => {
+  customSearchModal.classList.remove('show');
+});
+
+customSearchModal.addEventListener('click', (e) => {
+  if (e.target === customSearchModal) {
+    customSearchModal.classList.remove('show');
   }
-  
-  const timeDiv = document.createElement('div');
-  timeDiv.className = 'message-time';
-  timeDiv.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  
-  messageDiv.appendChild(contentDiv);
-  messageDiv.appendChild(timeDiv);
-  chatContainer.appendChild(messageDiv);
-  scrollToBottom();
-}
+});
 
-// Scroll to Bottom
-function scrollToBottom() {
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-
-// Chat Form Submit
-chatForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
+// Run Custom Search
+runCustomSearchBtn.addEventListener('click', async () => {
+  const instruction = customSearchInput.value.trim();
   
-  const message = messageInput.value.trim();
-  if (!message) return;
-
-  // Remove welcome message if exists
-  if (hasWelcome) {
-    const welcome = chatContainer.querySelector('.welcome-message');
-    if (welcome) {
-      welcome.remove();
-      hasWelcome = false;
-    }
+  if (!instruction) {
+    showToast('Please enter a search instruction', 'error');
+    return;
   }
 
-  // Add user message
-  addMessage('user', message);
-  conversationHistory.push({ role: 'user', content: message });
-  
-  // Clear input
-  messageInput.value = '';
-  sendBtn.disabled = true;
-
-  // Add loading indicator
-  const loadingDiv = document.createElement('div');
-  loadingDiv.className = 'message ai';
-  loadingDiv.innerHTML = `
-    <div class="message-content">
-      <div class="typing-indicator">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-    </div>
-  `;
-  chatContainer.appendChild(loadingDiv);
-  scrollToBottom();
+  customSearchModal.classList.remove('show');
+  customSearchInput.value = '';
 
   try {
+    linksContainer.innerHTML = `
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Searching with your custom instruction...</p>
+      </div>
+    `;
+
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: message,
-        history: conversationHistory
+        message: instruction,
+        history: []
       }),
     });
 
-    loadingDiv.remove();
-
     if (!response.ok) {
-      throw new Error('Failed to get response');
+      throw new Error('Search failed');
     }
 
     const data = await response.json();
 
     if (data.success) {
-      // Convert markdown links to HTML
-      const htmlContent = data.response
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>');
-      
-      addMessage('ai', htmlContent, true);
-      conversationHistory.push({ role: 'assistant', content: data.response });
+      // Parse links from response
+      const links = extractLinks(data.response);
+      displayCustomResults(links, data.response);
     } else {
       throw new Error(data.error || 'Unknown error');
     }
   } catch (error) {
-    console.error('Chat error:', error);
-    loadingDiv.remove();
-    addMessage('ai', `⚠️ Error: ${error.message}`);
-  } finally {
-    sendBtn.disabled = false;
-    messageInput.focus();
-  }
-});
-
-// Input Handler
-messageInput.addEventListener('input', () => {
-  sendBtn.disabled = !messageInput.value.trim();
-});
-
-// Suggestion Chips
-document.querySelectorAll('.suggestion-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    const prompt = chip.dataset.prompt;
-    messageInput.value = prompt;
-    sendBtn.disabled = false;
-    messageInput.focus();
-    chatForm.dispatchEvent(new Event('submit'));
-  });
-});
-
-// Clear Chat
-clearChatBtn.addEventListener('click', () => {
-  if (confirm('Clear all messages?')) {
-    chatContainer.innerHTML = `
-      <div class="welcome-message">
-        <div class="welcome-icon">🤖</div>
-        <h2>Welcome to Intelligence Briefing AI</h2>
-        <p>Ask me anything about science, economics, tech, or college admissions. I'll search the web and provide you with live links.</p>
-        <div class="suggestion-chips">
-          <button class="suggestion-chip" data-prompt="What's the latest breakthrough in quantum computing?">
-            🔬 Quantum Computing
-          </button>
-          <button class="suggestion-chip" data-prompt="Latest macroeconomic policy changes">
-            📈 Economics
-          </button>
-          <button class="suggestion-chip" data-prompt="Top college admissions strategies for Ivy League">
-            🎓 Admissions
-          </button>
-          <button class="suggestion-chip" data-prompt="Latest AI technology trends">
-            💻 AI & Tech
-          </button>
-        </div>
+    console.error('Custom search error:', error);
+    linksContainer.innerHTML = `
+      <div class="error-state">
+        <p>⚠️ Search failed: ${error.message}</p>
+        <button class="retry-btn" onclick="loadDailyBriefing()">Back to Daily Briefing</button>
       </div>
     `;
-    hasWelcome = true;
-    conversationHistory = [];
-    
-    // Re-attach suggestion chip listeners
-    document.querySelectorAll('.suggestion-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const prompt = chip.dataset.prompt;
-        messageInput.value = prompt;
-        sendBtn.disabled = false;
-        messageInput.focus();
-        chatForm.dispatchEvent(new Event('submit'));
-      });
-    });
   }
 });
+
+// Extract Links from Response
+function extractLinks(text) {
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const links = [];
+  let match;
+  
+  while ((match = linkRegex.exec(text)) !== null) {
+    links.push({
+      title: match[1],
+      url: match[2]
+    });
+  }
+  
+  return links;
+}
+
+// Display Custom Results
+function displayCustomResults(links, fullResponse) {
+  let html = `
+    <div class="section">
+      <h3>🔍 Custom Search Results</h3>
+      <p class="section-description">${fullResponse}</p>
+      <div class="links-grid">
+  `;
+
+  if (links.length > 0) {
+    html += links.map(link => `
+      <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="link-card">
+        <div class="link-title">${link.title}</div>
+        <div class="link-url">${new URL(link.url).hostname}</div>
+      </a>
+    `).join('');
+  } else {
+    html += '<p>No links found in response.</p>';
+  }
+
+  html += `
+      </div>
+    </div>
+    <button class="back-btn" onclick="loadDailyBriefing()">← Back to Daily Briefing</button>
+  `;
+
+  linksContainer.innerHTML = html;
+}
 
 // Toast Notification
 function showToast(message, type = 'success') {

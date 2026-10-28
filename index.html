@@ -16,60 +16,70 @@
     <!-- Header -->
     <header class="header">
       <div class="header-left">
-        <div class="ethiopian-date" id="ethiopianDate">
+        <div class="date" id="date">
           <span class="loading">Loading...</span>
         </div>
-        <div class="subtitle">Intelligence Briefing AI</div>
+        <div class="subtitle">Daily Intelligence Links</div>
       </div>
-      <button class="clear-chat-btn" id="clearChatBtn" title="Clear chat">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 6h18"></path>
-          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-        </svg>
-      </button>
+      <div class="header-actions">
+        <button class="action-btn" id="customSearchBtn" title="Custom Search">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          Custom Search
+        </button>
+      </div>
     </header>
 
-    <!-- Chat Messages -->
-    <div class="chat-container" id="chatContainer">
-      <div class="welcome-message">
-        <div class="welcome-icon">🤖</div>
-        <h2>Welcome to Intelligence Briefing AI</h2>
-        <p>Ask me anything about science, economics, tech, or college admissions. I'll search the web and provide you with live links.</p>
-        <div class="suggestion-chips">
-          <button class="suggestion-chip" data-prompt="What's the latest breakthrough in quantum computing?">
-            🔬 Quantum Computing
-          </button>
-          <button class="suggestion-chip" data-prompt="Latest macroeconomic policy changes">
-            📈 Economics
-          </button>
-          <button class="suggestion-chip" data-prompt="Top college admissions strategies for Ivy League">
-            🎓 Admissions
-          </button>
-          <button class="suggestion-chip" data-prompt="Latest AI technology trends">
-            💻 AI & Tech
-          </button>
-        </div>
+    <!-- Links Container -->
+    <div class="links-container" id="linksContainer">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Fetching daily intelligence links...</p>
       </div>
     </div>
 
-    <!-- Input Area -->
-    <div class="input-container">
-      <form class="input-form" id="chatForm">
-        <input 
-          type="text" 
-          id="messageInput" 
-          placeholder="Ask me anything..."
-          class="message-input"
-          autocomplete="off"
-        >
-        <button type="submit" class="send-btn" id="sendBtn" disabled>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 2L11 13"></path>
-            <path d="M22 2L15 22L11 13L2 9L22 2"></path>
-          </svg>
-        </button>
-      </form>
+    <!-- Bottom Actions -->
+    <div class="bottom-actions">
+      <button class="primary-btn" id="getMoreBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6"></path>
+          <path d="M1 20v-6h6"></path>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Get More Links
+      </button>
+    </div>
+
+    <!-- Custom Search Modal -->
+    <div class="modal" id="customSearchModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Custom Search</h2>
+          <button class="close-btn" id="closeCustomSearchBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18"></path>
+              <path d="M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-description">Write a custom instruction to search for specific topics:</p>
+          <textarea 
+            id="customSearchInput" 
+            placeholder="e.g., Find the latest papers on quantum computing breakthroughs from arXiv"
+            rows="4"
+          ></textarea>
+          <button class="primary-btn" id="runCustomSearchBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            Search
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Toast -->
