@@ -4,6 +4,19 @@ function toGregorianDate(date) {
   return date.toLocaleDateString('en-US', options);
 }
 
+async function getApiError(response, fallback) {
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    return `${fallback} (HTTP ${response.status})`;
+  }
+
+  return data && typeof data.error === 'string'
+    ? data.error
+    : `${fallback} (HTTP ${response.status})`;
+}
+
 // UI Elements
 const dateEl = document.getElementById('date');
 const linksContainer = document.getElementById('linksContainer');
@@ -48,7 +61,7 @@ async function loadDailyBriefing() {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to load daily briefing');
+      throw new Error(await getApiError(response, 'Failed to load daily briefing'));
     }
 
     const data = await response.json();
@@ -62,10 +75,12 @@ async function loadDailyBriefing() {
     console.error('Error loading briefing:', error);
     linksContainer.innerHTML = `
       <div class="error-state">
-        <p>⚠️ Failed to load: ${error.message}</p>
+        <p class="error-message"></p>
         <button class="retry-btn" onclick="loadDailyBriefing()">Retry</button>
       </div>
     `;
+    linksContainer.querySelector('.error-message').textContent =
+      `⚠️ Failed to load: ${error.message}`;
   }
 }
 
@@ -152,7 +167,7 @@ runCustomSearchBtn.addEventListener('click', async () => {
     });
 
     if (!response.ok) {
-      throw new Error('Search failed');
+      throw new Error(await getApiError(response, 'Search failed'));
     }
 
     const data = await response.json();
@@ -168,10 +183,12 @@ runCustomSearchBtn.addEventListener('click', async () => {
     console.error('Custom search error:', error);
     linksContainer.innerHTML = `
       <div class="error-state">
-        <p>⚠️ Search failed: ${error.message}</p>
+        <p class="error-message"></p>
         <button class="retry-btn" onclick="loadDailyBriefing()">Back to Daily Briefing</button>
       </div>
     `;
+    linksContainer.querySelector('.error-message').textContent =
+      `⚠️ Search failed: ${error.message}`;
   }
 });
 

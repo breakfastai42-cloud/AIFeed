@@ -24,7 +24,7 @@ A personalized AI-powered intelligence curator that builds your mind through dai
 
 ## Prerequisites
 
-- Node.js 18+ (for local testing)
+- Node.js 20+ (for local testing and the current Google GenAI SDK)
 - Google AI Studio API key with Gemini Flash access
 
 ## Setup
@@ -152,12 +152,10 @@ Visit your Vercel URL to access the app. The daily briefing will load automatica
 4. **Context**: Remembers conversation history for follow-up questions
 
 ### Model Priority
-The AI tries models in this order (fallback if one fails):
-- `gemini-2.0-flash` (fastest, highest priority)
-- `gemini-1.5-flash`
-- `gemini-1.5-flash-lite`
-- `gemini-1.5-pro`
-- `gemini-1.0-pro` (fallback)
+The AI tries current stable models in this order (fallback if one fails):
+- `gemini-3.8-flash`
+- `gemini-3.6-flash`
+- `gemini-3.5-flash-lite`
 
 ## Customization
 
@@ -178,6 +176,7 @@ Edit suggestion chips in `public/index.html` (lines 42-49) and `public/app.js` (
 **Daily briefing not loading:**
 - Verify `GEMINI_API_KEY` is set in Vercel environment variables
 - Check Vercel Function Logs for errors
+- The page now shows the API's error message; a missing key must be added to the Vercel project and redeployed
 - Try clicking "Get New Briefing" button
 
 **Chat not responding:**
