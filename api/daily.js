@@ -12,6 +12,26 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const topic = typeof body.topic === 'string' ? body.topic : 'all topics';
+  const instruction = typeof body.instruction === 'string' ? body.instruction.trim() : '';
+  const more = body.more === true;
+  const supportedTopics = [
+    'all topics',
+    'frontier research',
+    'macroeconomics',
+    'foundational knowledge',
+    'college admissions',
+    'learning and cognitive science',
+  ];
+
+  if (!supportedTopics.includes(topic)) {
+    return res.status(400).json({ error: 'Choose a supported briefing topic.' });
+  }
+  if (instruction.length > 500) {
+    return res.status(400).json({ error: 'Search instructions must be 500 characters or fewer.' });
+  }
+
   // Check for API key
   if (!process.env.GEMINI_API_KEY) {
     return res.status(503).json({ error: 'GEMINI_API_KEY environment variable is not set' });
@@ -30,9 +50,14 @@ export default async function handler(req, res) {
         console.log(`Attempting model: ${modelName}`);
 
         // Construct personalized daily briefing prompt
-        const prompt = `You are a personalized intelligence curator. Your mission is to build the user's mind by providing high-signal, actionable information every morning.
+        const prompt = `You are a daily intelligence-link curator, not a chatbot. Find and summarize useful, current sources as clickable links.
 
-Generate a daily briefing with exactly 5 sections. Each section MUST include 3-5 live, verified URLs from the web using Google Search.
+${topic === 'all topics'
+    ? 'Generate exactly 5 sections, one for each topic below.'
+    : `Generate exactly 1 section focused on ${topic}.`}
+Include exactly 3 useful links in each section. Use Google Search to find and verify the source URLs.
+${more ? 'Find a fresh set of links, different from the most obvious top results where possible.' : ''}
+${instruction ? `Prioritize this user search instruction while keeping links relevant to ${topic}: "${instruction}"` : ''}
 
 Format your response as a JSON object with this structure:
 {
@@ -52,6 +77,7 @@ Format your response as a JSON object with this structure:
   ]
 }
 
+Topics:
 Section 1 - 🔬 RESEARCH PAPERS (Frontier Science):
 Search arXiv, Nature, Science, PNAS for today's breakthrough papers. Focus on: quantum computing, AI architectures, theoretical physics, biology breakthroughs. Include 3 paper links with abstracts.
 
@@ -71,7 +97,8 @@ IMPORTANT:
 - Every link MUST be live and clickable
 - URLs should be from primary sources (arXiv, NY Times, Wikipedia, official admissions sites)
 - Return ONLY the JSON, no additional text
-- Links should be from the last 24-48 hours for news, timeless for Wikipedia/research`;
+- Prefer current sources for news and timeless sources for foundational knowledge
+- Match the number of sections to the instructions above`;
 
         const result = await genAI.interactions.create({
           model: modelName,
