@@ -1,23 +1,24 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-// Model priority: Flash → Lite → Pro → Lower versions
+// Try current stable models in priority order.
 const MODEL_PRIORITY = [
-  'gemini-2.0-flash',
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-lite',
-  'gemini-1.5-pro',
-  'gemini-1.0-pro',
+  'gemini-3.8-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash-lite',
 ];
 
 export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   // Check for API key
   if (!process.env.GEMINI_API_KEY) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY environment variable is not set' });
+    return res.status(503).json({ error: 'GEMINI_API_KEY environment variable is not set' });
   }
 
   try {
-    // Initialize Gemini with Search Grounding enabled
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
     // Try models in priority order with fallback
     let briefing = null;
@@ -27,10 +28,6 @@ export default async function handler(req, res) {
     for (const modelName of MODEL_PRIORITY) {
       try {
         console.log(`Attempting model: ${modelName}`);
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          tools: [{ googleSearch: {} }],
-        });
 
         // Construct personalized daily briefing prompt
         const prompt = `You are a personalized intelligence curator. Your mission is to build the user's mind by providing high-signal, actionable information every morning.
@@ -76,10 +73,15 @@ IMPORTANT:
 - Return ONLY the JSON, no additional text
 - Links should be from the last 24-48 hours for news, timeless for Wikipedia/research`;
 
-        // Generate content with search grounding
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const responseText = response.text();
+        const result = await genAI.interactions.create({
+          model: modelName,
+          input: prompt,
+          tools: [{ type: 'google_search' }],
+        });
+        const responseText = result.output_text;
+        if (!responseText) {
+          throw new Error(`Model ${modelName} returned an empty response`);
+        }
         usedModel = modelName;
         console.log(`Successfully generated briefing using model: ${modelName}`);
         
@@ -90,8 +92,11 @@ IMPORTANT:
             briefing = JSON.parse(jsonMatch[0]);
           } catch (parseError) {
             console.error('JSON parse error:', parseError);
+            lastError = new Error(`Model ${modelName} returned invalid JSON`);
             briefing = null;
           }
+        } else {
+          lastError = new Error(`Model ${modelName} returned no JSON`);
         }
         
         if (briefing) break; // Success, exit the loop
