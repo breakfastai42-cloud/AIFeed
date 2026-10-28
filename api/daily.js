@@ -33,14 +33,14 @@ export default async function handler(req, res) {
   }
 
   const credentials = [
-    { apiKey: process.env.GEMINI_API_KEY },
     { apiKey: process.env.GEMINI_API_KEY_2 },
     { apiKey: process.env.GEMINI_API_KEY_3 },
+    { apiKey: process.env.GEMINI_API_KEY },
   ].filter(credential => credential.apiKey);
 
   if (credentials.length === 0) {
     return res.status(503).json({
-      error: 'Configure at least one key: GEMINI_API_KEY, GEMINI_API_KEY_2, or GEMINI_API_KEY_3.',
+      error: 'Configure at least one key: GEMINI_API_KEY_2, GEMINI_API_KEY_3, or GEMINI_API_KEY.',
     });
   }
 
@@ -150,7 +150,7 @@ IMPORTANT:
     if (!briefing) {
       if (quotaExceeded) {
         return res.status(429).json({
-          error: 'Gemini quota was exceeded and no configured key succeeded. Check project usage and billing at https://aistudio.google.com/rate-limit. Daily request limits reset at midnight Pacific. Each backup key needs to belong to a different Google Cloud project to provide a separate project quota.',
+          error: 'Gemini quota was exceeded and no configured key succeeded. Check project usage and billing at https://aistudio.google.com/rate-limit. Daily request limits reset at midnight Pacific. Each key needs to belong to a different Google Cloud project to provide a separate project quota.',
         });
       }
       throw new Error(`All models failed. Last error: ${lastError?.message || 'Unknown error'}`);
