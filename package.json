@@ -1,18 +1,19 @@
 {
   "type": "module",
-  "name": "morning-intelligence-briefing",
+  "name": "intelligence-briefing-ai",
   "version": "1.0.0",
-  "description": "Automated morning intelligence briefing via Vercel cron, Gemini API, and Telegram",
-  "main": "api/cron.js",
+  "description": "Personalized AI intelligence curator with daily research papers, economics, and Wikipedia deep dives",
+  "main": "api/chat.js",
   "scripts": {
-    "start": "node api/cron.js"
+    "start": "vercel dev"
   },
   "keywords": [
     "vercel",
-    "cron",
     "gemini",
-    "telegram",
-    "automation"
+    "ai",
+    "intelligence",
+    "research",
+    "pwa"
   ],
   "author": "",
   "license": "MIT",

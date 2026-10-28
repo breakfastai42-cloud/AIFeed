@@ -1,29 +1,31 @@
-# Morning Intelligence Briefing
+# Intelligence Briefing AI
 
-An automated serverless cron job that delivers a daily intelligence briefing to Telegram every morning at 06:00 AM East Africa Time (03:00 UTC). The briefing includes:
-
-- 🔬 **Frontier Science & Tech**: Breakthroughs from Quanta Magazine, Nature, arXiv
-- 📈 **Macroeconomics & Global Forces**: High-signal economic developments
-- 🎓 **College Admissions Insider Intel**: Actionable Ivy League admissions strategies
-- 🏛️ **Titan Strategy & Cognitive Habits**: Mental models from industry titans
-
-Powered by Google Gemini API with Search Grounding to fetch live, verified URLs.
+A personalized AI-powered intelligence curator that builds your mind through daily curated links from research papers, NY Times economics, Wikipedia, and more. Includes a chat interface for exploring specific topics.
 
 ## Features
 
-- **Live Web Search**: Uses Gemini's native Google Search tool to fetch real, non-hallucinated URLs
-- **Smart Model Fallback**: Automatically tries models in priority order (Flash → Lite → Pro → Lower versions) to ensure reliability
-- **Telegram Integration**: Sends formatted HTML messages with clickable links
-- **Graceful Fallback**: Strips HTML and retries as plain text if Telegram parsing fails
-- **Secure Endpoint**: CRON_SECRET protects the cron route from unauthorized access
-- **Local Dev Friendly**: Security bypasses in development mode
+### Daily Briefing (Automatic on Load)
+- **🔬 Research Papers**: Curated breakthrough papers from arXiv, Nature, Science, PNAS
+- **📈 Macroeconomics**: Latest developments from NY Times Economy, The Economist, Bloomberg, IMF
+- **📚 Wikipedia Deep Dives**: High-quality comprehensive articles for foundational knowledge
+- **🎓 College Admissions Intel**: Insider strategies from Reddit, MIT/Yale/Stanford admissions
+- **🧠 Cognitive Titan Strategies**: Mental models from Feynman, Musk, Huang, Hassabis + neuroscience research
+
+### Interactive Chat
+- **Personalized AI Curator**: Ask questions and get responses with live, verified links
+- **Primary Sources**: Always links to arXiv, NY Times, Wikipedia, official admissions sites
+- **Conversation Memory**: Remembers context across your chat session
+- **Ethiopian Calendar**: Displays current date in Ethiopian calendar format
+
+### PWA Features
+- **Installable**: Add to home screen on iOS and Android
+- **Offline Support**: Works offline with service worker caching
+- **Mobile-First Design**: Optimized for touch interfaces
 
 ## Prerequisites
 
 - Node.js 18+ (for local testing)
 - Google AI Studio API key with Gemini Flash access
-- Telegram Bot token from @BotFather
-- Telegram Chat ID (recipient)
 
 ## Setup
 
@@ -31,7 +33,7 @@ Powered by Google Gemini API with Search Grounding to fetch live, verified URLs.
 
 ```bash
 git clone <your-repo-url>
-cd morning-intelligence-briefing
+cd intelligence-briefing-ai
 ```
 
 ### 2. Install Dependencies
@@ -48,35 +50,16 @@ Copy `.env.example` to `.env`:
 cp .env.example .env
 ```
 
-Fill in your credentials:
+Fill in your API key:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-TELEGRAM_CHAT_ID=your_telegram_chat_id_here
-CRON_SECRET=your_random_secret_string_here
 ```
 
-#### Getting the Credentials
-
-**Gemini API Key:**
+**Getting the API Key:**
 1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
 2. Create a new API key
 3. Copy it to your `.env`
-
-**Telegram Bot Token:**
-1. Start a chat with [@BotFather](https://t.me/BotFather) on Telegram
-2. Send `/newbot` and follow the instructions
-3. Copy the token (format: `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
-
-**Telegram Chat ID:**
-1. Send a message to your bot in Telegram
-2. Visit: `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
-3. Look for `"chat":{"id":123456789}` in the response
-4. Copy the numeric ID
-
-**CRON_SECRET:**
-Generate a secure random string (e.g., using `openssl rand -base64 32` or a password manager)
 
 ### 4. Local Testing (Optional)
 
@@ -92,12 +75,7 @@ Run locally:
 vercel dev
 ```
 
-Test the endpoint:
-
-```bash
-curl -X POST http://localhost:3000/api/cron \
-  -H "Authorization: Bearer YOUR_CRON_SECRET"
-```
+Visit `http://localhost:3000` to test the app.
 
 ## Deployment to Vercel
 
@@ -128,102 +106,89 @@ Follow the prompts:
 
 1. Go to your project in [Vercel Dashboard](https://vercel.com/dashboard)
 2. Navigate to **Settings** → **Environment Variables**
-3. Add the following variables:
-   - `GEMINI_API_KEY`
-   - `TELEGRAM_BOT_TOKEN`
-   - `TELEGRAM_CHAT_ID`
-   - `CRON_SECRET`
+3. Add `GEMINI_API_KEY`
 4. Click **Save** and redeploy if prompted
 
-### 5. Verify Cron Job
+### 5. Access the App
 
-After deployment, Vercel will automatically configure the cron job based on `vercel.json`. The job runs daily at 03:00 UTC (06:00 AM EAT).
-
-To verify:
-- Go to your project in Vercel Dashboard
-- Navigate to **Cron Jobs** tab
-- You should see `/api/cron` scheduled with `0 3 * * *`
+Visit your Vercel URL to access the app. The daily briefing will load automatically.
 
 ## File Structure
 
 ```
 .
 ├── api/
-│   └── cron.js          # Main serverless function with model fallback
-├── vercel.json          # Cron job configuration
-├── package.json         # Dependencies and ES module config
+│   ├── chat.js          # Chat API endpoint with conversation history
+│   └── daily.js         # Daily briefing API endpoint
+├── public/
+│   ├── index.html       # Chat interface UI
+│   ├── styles.css       # Dark theme styles
+│   ├── app.js           # Ethiopian calendar & chat logic
+│   ├── manifest.json    # PWA manifest
+│   ├── service-worker.js # Offline support
+│   ├── icon-192.svg     # App icon
+│   └── icon-512.svg     # App icon
+├── index.html           # Root redirect
+├── vercel.json          # Vercel config
+├── package.json         # Dependencies
 ├── .env.example         # Environment variable template
-├── .gitignore           # Git ignore file (protects .env)
+├── .gitignore           # Git ignore
 └── README.md            # This file
 ```
 
 ## How It Works
 
-1. **Cron Trigger**: Vercel triggers `/api/cron` at 03:00 UTC daily
-2. **Security Check**: Validates `Authorization: Bearer CRON_SECRET` header
-3. **Model Selection**: Tries Gemini models in priority order:
-   - `gemini-2.0-flash` (fastest, highest priority)
-   - `gemini-1.5-flash`
-   - `gemini-1.5-flash-lite`
-   - `gemini-1.5-pro`
-   - `gemini-1.0-pro` (fallback)
-4. **Content Generation**: Selected model searches the web and generates 4 intelligence blocks with live URLs
-5. **Telegram Dispatch**: Sends formatted HTML message to your chat
-6. **Fallback Mechanism**: If HTML parsing fails, strips tags and retries as plain text
+### Daily Briefing
+1. **Auto-Load**: When you open the app, it automatically fetches today's briefing
+2. **AI Search**: Gemini searches the web for 5 curated sections
+3. **Structured Results**: Returns JSON with 5 sections, each with 3-5 live links
+4. **Display**: Shows formatted briefing with clickable links
+5. **Refresh**: Click "Get New Briefing" to fetch fresh links
 
-## Troubleshooting
+### Chat Interface
+1. **User Input**: Type any question or topic
+2. **AI Search**: Gemini searches primary sources (arXiv, NY Times, Wikipedia)
+3. **Response**: Returns answer with 3-5 live, verified links
+4. **Context**: Remembers conversation history for follow-up questions
 
-**Cron job not running:**
-- Verify `vercel.json` is present and valid
-- Check Vercel Dashboard → Cron Jobs tab
-- Ensure project is deployed (not just linked)
-
-**Telegram message not sending:**
-- Verify `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are correct
-- Check bot has permission to message you (start a conversation first)
-- Check Vercel Function Logs for errors
-
-**Gemini API errors:**
-- Verify `GEMINI_API_KEY` is valid and has Gemini Flash access
-- Check API quota limits in Google AI Studio
-- Review Vercel Function Logs for specific error messages
-
-**Unauthorized (401) error:**
-- Ensure `CRON_SECRET` matches between Vercel env vars and your test request
-- In local dev with `vercel dev`, set `NODE_ENV=development` to bypass auth
+### Model Priority
+The AI tries models in this order (fallback if one fails):
+- `gemini-2.0-flash` (fastest, highest priority)
+- `gemini-1.5-flash`
+- `gemini-1.5-flash-lite`
+- `gemini-1.5-pro`
+- `gemini-1.0-pro` (fallback)
 
 ## Customization
 
-**Change Cron Schedule:**
-Edit `vercel.json`:
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron",
-      "schedule": "0 3 * * *"  // Change this cron expression
-    }
-  ]
-}
-```
+**Modify Daily Briefing Sections:**
+Edit the prompt in `api/daily.js` (lines 35-68) to change the 5 sections or sources.
+
+**Change Chat Persona:**
+Edit the system prompt in `api/chat.js` (lines 41-63) to adjust the AI's behavior.
 
 **Modify Model Priority:**
-Edit the `MODEL_PRIORITY` array in `api/cron.js` (lines 4-10) to change the fallback order:
-```javascript
-const MODEL_PRIORITY = [
-  'gemini-2.0-flash',      // Highest priority
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-lite',
-  'gemini-1.5-pro',
-  'gemini-1.0-pro',        // Lowest priority
-];
-```
+Edit the `MODEL_PRIORITY` array in both `api/chat.js` and `api/daily.js` (lines 4-10).
 
-**Modify Intelligence Sections:**
-Edit the prompt in `api/cron.js` (lines 39-58).
+**Add Quick Suggestions:**
+Edit suggestion chips in `public/index.html` (lines 42-49) and `public/app.js` (lines 264-274).
 
-**Add More Sources:**
-Expand the prompt instructions to include additional sources or topics.
+## Troubleshooting
+
+**Daily briefing not loading:**
+- Verify `GEMINI_API_KEY` is set in Vercel environment variables
+- Check Vercel Function Logs for errors
+- Try clicking "Get New Briefing" button
+
+**Chat not responding:**
+- Verify `GEMINI_API_KEY` is valid
+- Check API quota limits in Google AI Studio
+- Review Vercel Function Logs
+
+**PWA not installing:**
+- Ensure service worker is registered (check browser console)
+- Verify manifest.json is accessible
+- Try clearing cache and reloading
 
 ## License
 
