@@ -21,6 +21,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Message is required' });
   }
 
+  // Check for API key
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY environment variable is not set' });
+  }
+
   try {
     // Initialize Gemini with Search Grounding enabled
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
