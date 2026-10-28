@@ -55,7 +55,9 @@ cp .env.example .env
 Fill in your API key:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=your_primary_project_gemini_api_key_here
+GEMINI_API_KEY_2=your_second_project_gemini_api_key_here
+GEMINI_API_KEY_3=your_third_project_gemini_api_key_here
 ```
 
 **Getting the API Key:**
@@ -108,7 +110,7 @@ Follow the prompts:
 
 1. Go to your project in [Vercel Dashboard](https://vercel.com/dashboard)
 2. Navigate to **Settings** → **Environment Variables**
-3. Add `GEMINI_API_KEY`
+3. Add `GEMINI_API_KEY`, `GEMINI_API_KEY_2`, and `GEMINI_API_KEY_3` (use a key from each Google Cloud project)
 4. Click **Save** and redeploy if prompted
 
 ### 5. Access the App
@@ -162,6 +164,9 @@ Edit the topic buttons in `index.html` and the matching topic list and prompt in
 **Modify Model Priority:**
 Edit the `MODEL_PRIORITY` array in `api/daily.js`.
 
+**Gemini quota failover:**
+The daily feed tries `GEMINI_API_KEY` first. If that project hits quota or has invalid credentials, it tries `GEMINI_API_KEY_2`, then `GEMINI_API_KEY_3`. Google applies API rate limits per project, so use keys from separate projects if you need separate quotas; multiple keys from one project share its quota. Store all keys as Vercel environment variables and redeploy after changing them.
+
 **Add Quick Suggestions:**
 Edit the suggestion buttons in `index.html`.
 
@@ -171,6 +176,7 @@ Edit the suggestion buttons in `index.html`.
 - Verify `GEMINI_API_KEY` is set in Vercel environment variables
 - Check Vercel Function Logs for errors
 - The page now shows the API's error message; a missing key must be added to the Vercel project and redeployed
+- If the API reports a 429 quota error, check the project limits and billing in [Google AI Studio](https://aistudio.google.com/rate-limit). Daily request limits reset at midnight Pacific; billing or plan limits may require an account change.
 - Try refreshing the feed
 
 **Focused search not responding:**
