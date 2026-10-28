@@ -1,21 +1,23 @@
 # Intelligence Briefing AI
 
-A personalized AI-powered intelligence curator that builds your mind through daily curated links from research papers, NY Times economics, Wikipedia, and more. Includes a chat interface for exploring specific topics.
+A personalized AI-powered daily intelligence feed with curated links, topic filters, and focused search.
 
 ## Features
 
-### Daily Briefing (Automatic on Load)
+### Daily Briefing Topics
 - **🔬 Research Papers**: Curated breakthrough papers from arXiv, Nature, Science, PNAS
 - **📈 Macroeconomics**: Latest developments from NY Times Economy, The Economist, Bloomberg, IMF
 - **📚 Wikipedia Deep Dives**: High-quality comprehensive articles for foundational knowledge
 - **🎓 College Admissions Intel**: Insider strategies from Reddit, MIT/Yale/Stanford admissions
 - **🧠 Cognitive Titan Strategies**: Mental models from Feynman, Musk, Huang, Hassabis + neuroscience research
 
-### Interactive Chat
-- **Personalized AI Curator**: Ask questions and get responses with live, verified links
-- **Primary Sources**: Always links to arXiv, NY Times, Wikipedia, official admissions sites
-- **Conversation Memory**: Remembers context across your chat session
-- **Ethiopian Calendar**: Displays current date in Ethiopian calendar format
+### Daily Intelligence Feed
+- **Daily Links**: Browse a daily briefing of clickable, summarized sources
+- **Topic Buttons**: Filter by research, economics, foundational knowledge, admissions, or learning
+- **More Links**: Append another set of links without losing the current feed
+- **Focused Search**: Use a suggested search or write an instruction to tailor the links
+- **Gregorian Date**: The header displays the date using the Gregorian calendar
+- **Response Time**: See how long each request took after results load
 
 ### PWA Features
 - **Installable**: Add to home screen on iOS and Android
@@ -118,17 +120,15 @@ Visit your Vercel URL to access the app. The daily briefing will load automatica
 ```
 .
 ├── api/
-│   ├── chat.js          # Chat API endpoint with conversation history
+│   ├── chat.js          # Legacy chat API endpoint
 │   └── daily.js         # Daily briefing API endpoint
-├── public/
-│   ├── index.html       # Chat interface UI
-│   ├── styles.css       # Dark theme styles
-│   ├── app.js           # Ethiopian calendar & chat logic
-│   ├── manifest.json    # PWA manifest
-│   ├── service-worker.js # Offline support
-│   ├── icon-192.svg     # App icon
-│   └── icon-512.svg     # App icon
-├── index.html           # Root redirect
+├── index.html           # Daily links feed
+├── styles.css           # Dark theme and responsive feed styles
+├── app.js               # Gregorian date, feed controls, and focused search
+├── manifest.json        # PWA manifest
+├── service-worker.js    # Offline support
+├── icon-192.svg         # App icon
+├── icon-512.svg         # App icon
 ├── vercel.json          # Vercel config
 ├── package.json         # Dependencies
 ├── .env.example         # Environment variable template
@@ -138,18 +138,12 @@ Visit your Vercel URL to access the app. The daily briefing will load automatica
 
 ## How It Works
 
-### Daily Briefing
-1. **Auto-Load**: When you open the app, it automatically fetches today's briefing
-2. **AI Search**: Gemini searches the web for 5 curated sections
-3. **Structured Results**: Returns JSON with 5 sections, each with 3-5 live links
-4. **Display**: Shows formatted briefing with clickable links
-5. **Refresh**: Click "Get New Briefing" to fetch fresh links
-
-### Chat Interface
-1. **User Input**: Type any question or topic
-2. **AI Search**: Gemini searches primary sources (arXiv, NY Times, Wikipedia)
-3. **Response**: Returns answer with 3-5 live, verified links
-4. **Context**: Remembers conversation history for follow-up questions
+### Daily Feed
+1. **Auto-Load**: Today's link briefing loads when the app opens
+2. **Choose a topic**: Select a topic button to get a focused briefing
+3. **More links**: Append another fresh set to the current feed
+4. **Focused search**: Select a suggestion or write a search instruction
+5. **Response time**: The feed reports elapsed request time when results arrive
 
 ### Model Priority
 The AI tries current stable models in this order (fallback if one fails):
@@ -160,16 +154,16 @@ The AI tries current stable models in this order (fallback if one fails):
 ## Customization
 
 **Modify Daily Briefing Sections:**
-Edit the prompt in `api/daily.js` (lines 35-68) to change the 5 sections or sources.
+Edit the prompt in `api/daily.js` to change the briefing topics or sources.
 
-**Change Chat Persona:**
-Edit the system prompt in `api/chat.js` (lines 41-63) to adjust the AI's behavior.
+**Change Daily Feed Topics:**
+Edit the topic buttons in `index.html` and the matching topic list and prompt in `api/daily.js`.
 
 **Modify Model Priority:**
-Edit the `MODEL_PRIORITY` array in both `api/chat.js` and `api/daily.js` (lines 4-10).
+Edit the `MODEL_PRIORITY` array in `api/daily.js`.
 
 **Add Quick Suggestions:**
-Edit suggestion chips in `public/index.html` (lines 42-49) and `public/app.js` (lines 264-274).
+Edit the suggestion buttons in `index.html`.
 
 ## Troubleshooting
 
@@ -177,9 +171,9 @@ Edit suggestion chips in `public/index.html` (lines 42-49) and `public/app.js` (
 - Verify `GEMINI_API_KEY` is set in Vercel environment variables
 - Check Vercel Function Logs for errors
 - The page now shows the API's error message; a missing key must be added to the Vercel project and redeployed
-- Try clicking "Get New Briefing" button
+- Try refreshing the feed
 
-**Chat not responding:**
+**Focused search not responding:**
 - Verify `GEMINI_API_KEY` is valid
 - Check API quota limits in Google AI Studio
 - Review Vercel Function Logs

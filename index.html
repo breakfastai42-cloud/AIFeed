@@ -2,91 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#1a1a2e">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Intelligence Briefing AI</title>
+  <title>Intelligence Briefing</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/styles.css">
   <link rel="icon" type="image/svg+xml" href="/icon-192.svg">
 </head>
 <body>
   <div class="app-container">
-    <!-- Header -->
     <header class="header">
       <div class="header-left">
-        <div class="date" id="date">
-          <span class="loading">Loading...</span>
-        </div>
-        <div class="subtitle">Daily Intelligence Links</div>
+        <div class="date" id="date"></div>
+        <div class="subtitle">Your daily intelligence feed</div>
       </div>
-      <div class="header-actions">
-        <button class="action-btn" id="customSearchBtn" title="Custom Search">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.35-4.35"></path>
-          </svg>
-          Custom Search
-        </button>
-      </div>
+      <button class="action-btn" id="refreshBtn" type="button">↻ Refresh feed</button>
     </header>
 
-    <!-- Links Container -->
-    <div class="links-container" id="linksContainer">
-      <div class="loading-state">
-        <div class="spinner"></div>
-        <p>Fetching daily intelligence links...</p>
-      </div>
-    </div>
-
-    <!-- Bottom Actions -->
-    <div class="bottom-actions">
-      <button class="primary-btn" id="getMoreBtn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M23 4v6h-6"></path>
-          <path d="M1 20v-6h6"></path>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-        </svg>
-        Get More Links
-      </button>
-    </div>
-
-    <!-- Custom Search Modal -->
-    <div class="modal" id="customSearchModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Custom Search</h2>
-          <button class="close-btn" id="closeCustomSearchBtn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18"></path>
-              <path d="M6 6l12 12"></path>
-            </svg>
-          </button>
+    <main>
+      <section class="feed-controls" aria-label="Daily feed topics">
+        <div class="control-heading">
+          <div>
+            <h1>Today's briefing</h1>
+            <p>Fresh links, curated for you. Pick a topic or browse everything.</p>
+          </div>
+          <span id="requestStatus" class="request-status" aria-live="polite"></span>
         </div>
-        <div class="modal-body">
-          <p class="modal-description">Write a custom instruction to search for specific topics:</p>
-          <textarea 
-            id="customSearchInput" 
-            placeholder="e.g., Find the latest papers on quantum computing breakthroughs from arXiv"
-            rows="4"
-          ></textarea>
-          <button class="primary-btn" id="runCustomSearchBtn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.35-4.35"></path>
-            </svg>
-            Search
-          </button>
+        <div class="topic-buttons" id="topicButtons" role="group" aria-label="Filter by topic">
+          <button class="topic-btn active" type="button" data-topic="all">All topics</button>
+          <button class="topic-btn" type="button" data-topic="research">🔬 Research</button>
+          <button class="topic-btn" type="button" data-topic="economics">📈 Economics</button>
+          <button class="topic-btn" type="button" data-topic="knowledge">📚 Deep dives</button>
+          <button class="topic-btn" type="button" data-topic="admissions">🎓 Admissions</button>
+          <button class="topic-btn" type="button" data-topic="learning">🧠 Learning</button>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- Toast -->
-    <div class="toast" id="toast"></div>
+      <section class="instruction-panel" aria-labelledby="instructionTitle">
+        <div>
+          <h2 id="instructionTitle">Make a focused search</h2>
+          <p>Choose a suggestion or write an instruction to tailor the links.</p>
+        </div>
+        <div class="suggestion-buttons" role="group" aria-label="Search suggestions">
+          <button type="button" class="suggestion-btn" data-instruction="Find the latest reliable research on AI safety and model evaluations.">AI safety</button>
+          <button type="button" class="suggestion-btn" data-instruction="Find recent discoveries in quantum computing from primary sources.">Quantum computing</button>
+          <button type="button" class="suggestion-btn" data-instruction="Find current global inflation and central bank policy updates from reliable sources.">Inflation &amp; rates</button>
+        </div>
+        <form id="instructionForm" class="instruction-form">
+          <label class="sr-only" for="instructionInput">Search instruction</label>
+          <textarea id="instructionInput" rows="2" maxlength="500" placeholder="For example: Find three recent studies on memory and learning from university or journal sources"></textarea>
+          <button class="primary-btn" id="searchBtn" type="submit">Find links</button>
+        </form>
+      </section>
+
+      <section class="links-container" id="linksContainer" aria-live="polite">
+        <div class="loading-state"><div class="spinner"></div><p>Preparing today's links…</p></div>
+      </section>
+
+      <div class="bottom-actions">
+        <button class="primary-btn" id="getMoreBtn" type="button">Show me more links</button>
+      </div>
+    </main>
+    <div class="toast" id="toast" role="status"></div>
   </div>
-
   <script src="/app.js"></script>
 </body>
 </html>

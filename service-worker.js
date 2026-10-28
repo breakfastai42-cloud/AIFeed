@@ -1,4 +1,4 @@
-const CACHE_NAME = 'morning-intel-v2';
+const CACHE_NAME = 'morning-intel-v3';
 const ASSETS = [
   '/',
   '/index.html',
